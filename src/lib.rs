@@ -87,7 +87,7 @@ impl Contract for FixedWidth {
         let text = match std::str::from_utf8(stream.bytes()) {
             Ok(text) => text,
             Err(error) => {
-                return Ok(result(vec![issue(
+                return Ok(ValidationResult::of(vec![ValidationIssue::at(
                     "malformed",
                     &format!("not UTF-8 text: {error}"),
                     &format!("byte {}", error.valid_up_to()),
@@ -95,13 +95,13 @@ impl Contract for FixedWidth {
             }
         };
         let Some(layout) = &self.layout else {
-            return Ok(result(Vec::new()));
+            return Ok(ValidationResult::of(Vec::new()));
         };
         let mut issues = Vec::new();
         for (ordinal, record) in records(text, layout.record_length()).enumerate() {
             check_record(layout, record, ordinal + 1, &mut issues);
         }
-        Ok(result(issues))
+        Ok(ValidationResult::of(issues))
     }
 }
 
@@ -139,7 +139,7 @@ fn check_record(layout: &Layout, record: &str, ordinal: usize, out: &mut Vec<Val
             chars.len(),
             layout.record_length()
         );
-        out.push(issue("length", &message, &at));
+        out.push(ValidationIssue::at("length", &message, &at));
         return;
     }
     for field in layout.fields() {
@@ -147,7 +147,11 @@ fn check_record(layout: &Layout, record: &str, ordinal: usize, out: &mut Vec<Val
             .iter()
             .collect();
         if let Some(message) = departure(field, &value) {
-            out.push(issue("value", &message, &format!("{at} / {}", field.name)));
+            out.push(ValidationIssue::at(
+                "value",
+                &message,
+                &format!("{at} / {}", field.name),
+            ));
         }
     }
 }
@@ -178,21 +182,6 @@ fn departure(field: &Field, value: &str) -> Option<String> {
     None
 }
 
-fn issue(code: &str, message: &str, path: &str) -> ValidationIssue {
-    ValidationIssue {
-        code: code.to_string(),
-        message: message.to_string(),
-        path: Some(path.to_string()),
-    }
-}
-
-fn result(issues: Vec<ValidationIssue>) -> ValidationResult {
-    ValidationResult {
-        valid: issues.is_empty(),
-        issues,
-    }
-}
-
 /// Loads the contract a Location names: an empty reference is the bare
 /// contract, anything else is the path of a copybook file.
 pub struct FixedWidthFactory;
@@ -216,11 +205,8 @@ impl ContractFactory for FixedWidthFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use contract::fixture::stream;
     use xcore::StreamId;
-
-    fn stream(text: &str) -> Stream {
-        Stream::new(StreamId::new(1), text.as_bytes().to_vec(), None)
-    }
 
     const ORDER: &str = "
        01  ORDER-RECORD.
