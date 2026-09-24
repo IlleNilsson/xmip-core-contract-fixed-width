@@ -17,7 +17,7 @@
 //! A field's name in an issue is its own name, with the occurrence when it
 //! repeats: `ORDER-LINE(2).QTY`.
 
-use sdk::contract::ContractError;
+use contract::ContractError;
 
 /// One elementary field in a record.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -15,11 +15,11 @@
 
 pub mod copybook;
 
-use copybook::{Field, Layout};
-use sdk::contract::{
+use contract::{
     Contract, ContractDescriptor, ContractError, ContractFactory, ContractId, ValidationIssue,
     ValidationResult,
 };
+use copybook::{Field, Layout};
 use stream::Stream;
 
 /// The fixed-width contract, bare or bound to a layout.
