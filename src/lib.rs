@@ -81,17 +81,17 @@ impl Contract for FixedWidth {
     fn identify(&self, stream: &Stream) -> Result<bool, ContractError> {
         // Text is the claim; a layout narrows nothing here, so a wrong-length
         // file is reported by validate rather than silently unclaimed.
-        Ok(std::str::from_utf8(stream.bytes()).is_ok())
+        Ok(stream.text().is_ok())
     }
 
     fn validate(&self, stream: &Stream) -> Result<ValidationResult, ContractError> {
-        let text = match std::str::from_utf8(stream.bytes()) {
+        let text = match stream.text() {
             Ok(text) => text,
             Err(error) => {
                 return Ok(ValidationResult::of(vec![ValidationIssue::at(
                     "malformed",
-                    &format!("not UTF-8 text: {error}"),
-                    &format!("byte {}", error.valid_up_to()),
+                    format!("not UTF-8 text: {error}"),
+                    format!("byte {}", error.valid_up_to()),
                 )]));
             }
         };
@@ -151,7 +151,7 @@ fn check_record(layout: &Layout, record: &str, ordinal: usize, out: &mut Vec<Val
             out.push(ValidationIssue::at(
                 "value",
                 &message,
-                &format!("{at} / {}", field.name),
+                format!("{at} / {}", field.name),
             ));
         }
     }
@@ -275,7 +275,7 @@ mod tests {
         let seen: Vec<(&str, &str)> = held
             .issues
             .iter()
-            .map(|i| (i.code.as_str(), i.path.as_deref().unwrap_or("")))
+            .map(|i| (i.code.as_ref(), i.path.as_deref().unwrap_or("")))
             .collect();
         assert_eq!(
             seen,
