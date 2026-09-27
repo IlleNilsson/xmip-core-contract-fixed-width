@@ -21,6 +21,7 @@ use contract::{
 };
 use copybook::{Field, Layout};
 use stream::Stream;
+use xcore::settings::{Applies, Kind, Presence, Setting, Settings};
 
 /// The fixed-width contract, bare or bound to a layout.
 pub struct FixedWidth {
@@ -191,6 +192,10 @@ impl ContractFactory for FixedWidthFactory {
         "fixed-width"
     }
 
+    fn settings(&self) -> &'static Settings {
+        SETTINGS
+    }
+
     fn load(&self, reference: &str) -> Result<Box<dyn Contract>, ContractError> {
         if reference.trim().is_empty() {
             return Ok(Box::new(FixedWidth::new()));
@@ -201,6 +206,18 @@ impl ContractFactory for FixedWidthFactory {
         Ok(Box::new(FixedWidth::with_copybook(&text)?))
     }
 }
+
+/// What a Location gives this contract (ADR-0064, amendment 2026-09-26).
+const SETTINGS: &Settings = &Settings {
+    technology: env!("CARGO_PKG_NAME"),
+    settings: &[Setting {
+        name: "reference",
+        kind: Kind::Address,
+        presence: Presence::Optional,
+        meaning: "The path of the copybook records are held to; left out, any text holds.",
+        applies: Applies::Both,
+    }],
+};
 
 #[cfg(test)]
 mod tests {
@@ -303,6 +320,39 @@ mod tests {
             factory
                 .load(dir.join("missing.cpy").to_str().expect("path"))
                 .is_err()
+        );
+    }
+
+    #[test]
+    fn fixed_width_declares_its_settings_and_reads_through_them() {
+        assert!(SETTINGS.problems().is_empty(), "{:?}", SETTINGS.problems());
+        let given = |name: &str, value: &str| {
+            (
+                name.to_string(),
+                xcore::settings::Given::Text(value.to_string()),
+            )
+        };
+        assert!(FixedWidthFactory.open(Applies::Both, &[]).is_ok(), "bare");
+        let unread = FixedWidthFactory
+            .open(
+                Applies::Receive,
+                &[given("reference", "/no/such/order.cpy")],
+            )
+            .err()
+            .expect("an unread file is refused");
+        assert!(
+            unread.message.contains("/no/such/order.cpy"),
+            "{}",
+            unread.message
+        );
+        let refused = FixedWidthFactory
+            .open(Applies::Send, &[given("unheard_of", "x")])
+            .err()
+            .expect("an unknown setting is refused");
+        assert!(
+            refused.message.contains("unheard_of"),
+            "{}",
+            refused.message
         );
     }
 }
