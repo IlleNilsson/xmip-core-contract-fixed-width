@@ -8,6 +8,11 @@ Two claims. **Well-formedness is a given**: the Stream is text.
 Location that refers to this contract with a layout bound has every record held
 to it, by length and by field, each departure naming the record and the field.
 
+The claims are this crate's when it is called, and the Playground calls it.
+A node holding a Location's Streams to it is
+[decided, not built](../../../../../doc/architecture/estate-map.md#arrival-validation): a node refuses to start a
+Location that names a contract until it does.
+
 The layout language is the COBOL copybook, because that is what fixed-width
 files come with. `src/copybook.rs` lists the subset read; a copybook outside it,
 binary usage above all, is refused when bound, by name.
