@@ -81,11 +81,11 @@ impl Contract for FixedWidth {
     fn identify(&self, stream: &Stream) -> Result<bool, ContractError> {
         // Text is the claim; a layout narrows nothing here, so a wrong-length
         // file is reported by validate rather than silently unclaimed.
-        Ok(stream.text().is_ok())
+        Ok(contract::text(stream)?.is_ok())
     }
 
     fn validate(&self, stream: &Stream) -> Result<ValidationResult, ContractError> {
-        let text = match stream.text() {
+        let text = match contract::text(stream)? {
             Ok(text) => text,
             Err(error) => {
                 return Ok(ValidationResult::of(vec![ValidationIssue::at(
