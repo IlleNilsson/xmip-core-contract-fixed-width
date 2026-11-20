@@ -308,8 +308,7 @@ mod tests {
             factory.load("").expect("bare").descriptor().id.0,
             "fixed-width"
         );
-        let dir = std::env::temp_dir().join("xmip-fixed-width-test");
-        std::fs::create_dir_all(&dir).expect("temp dir");
+        let dir = file::temporary::Folder::new("fixed-width");
         let file = dir.join("order.cpy");
         std::fs::write(&file, ORDER).expect("write copybook");
         let bound = factory
