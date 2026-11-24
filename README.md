@@ -8,7 +8,7 @@ Two claims. **Well-formedness is a given**: the Stream is text.
 Location that refers to this contract with a layout bound has every record held
 to it, by length and by field, each departure naming the record and the field.
 
-The claims are this crate's when it is called, and the Essentials calls it.
+The claims are this crate's when it is called, and the System Tests call it.
 A node holding a Location's Streams to it is
 [decided, not built](../../../../../doc/architecture/estate-map.md#arrival-validation): a node refuses to start a
 Location that names a contract until it does.
