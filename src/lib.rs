@@ -12,23 +12,39 @@
 //! flat-file schemas of the products Xmip replaces were hand-transcriptions of
 //! it. [`copybook`] documents the subset read. Records are lines when the text
 //! has line breaks, and consecutive record-length slices when it does not.
+//!
+//! **Built with its `declaration` feature alone** the crate is
+//! [`declaration`], what a Location naming it is configured with and the
+//! name a Validate step names it by, and none of the code above, which is
+//! behind the default feature: what the surfaces' library carries (ADR-0064,
+//! amendment 2026-11-26).
 
+#[cfg(feature = "declaration")]
+pub mod declaration;
+
+#[cfg(feature = "default")]
 pub mod copybook;
 
+#[cfg(feature = "default")]
 use contract::{
     Contract, ContractDescriptor, ContractError, ContractFactory, ContractId, ValidationIssue,
     ValidationResult,
 };
+#[cfg(feature = "default")]
 use copybook::{Field, Layout};
+#[cfg(feature = "default")]
 use stream::Stream;
-use xcore::settings::{Applies, Kind, Presence, Setting, Settings};
+#[cfg(feature = "default")]
+use xcore::settings::Settings;
 
 /// The fixed-width contract, bare or bound to a layout.
+#[cfg(feature = "default")]
 pub struct FixedWidth {
     descriptor: ContractDescriptor,
     layout: Option<Layout>,
 }
 
+#[cfg(feature = "default")]
 impl FixedWidth {
     /// Text only.
     #[must_use]
@@ -59,12 +75,14 @@ impl FixedWidth {
     }
 }
 
+#[cfg(feature = "default")]
 impl Default for FixedWidth {
     fn default() -> Self {
         Self::new()
     }
 }
 
+#[cfg(feature = "default")]
 fn descriptor(id: &str) -> ContractDescriptor {
     ContractDescriptor {
         id: ContractId(id.to_string()),
@@ -73,6 +91,7 @@ fn descriptor(id: &str) -> ContractDescriptor {
     }
 }
 
+#[cfg(feature = "default")]
 impl Contract for FixedWidth {
     fn descriptor(&self) -> &ContractDescriptor {
         &self.descriptor
@@ -107,6 +126,7 @@ impl Contract for FixedWidth {
 }
 
 /// Records are lines when the text has any, else slices of the record length.
+#[cfg(feature = "default")]
 fn records(text: &str, length: usize) -> Box<dyn Iterator<Item = &str> + '_> {
     if text.contains('\n') {
         Box::new(
@@ -131,6 +151,7 @@ fn records(text: &str, length: usize) -> Box<dyn Iterator<Item = &str> + '_> {
     }
 }
 
+#[cfg(feature = "default")]
 fn check_record(layout: &Layout, record: &str, ordinal: usize, out: &mut Vec<ValidationIssue>) {
     let chars: Vec<char> = record.chars().collect();
     let at = format!("record {ordinal}");
@@ -158,6 +179,7 @@ fn check_record(layout: &Layout, record: &str, ordinal: usize, out: &mut Vec<Val
 }
 
 /// Why a value does not fit its field, or `None` when it does.
+#[cfg(feature = "default")]
 fn departure(field: &Field, value: &str) -> Option<String> {
     if !field.numeric {
         return None;
@@ -185,15 +207,17 @@ fn departure(field: &Field, value: &str) -> Option<String> {
 
 /// Loads the contract a Location names: an empty reference is the bare
 /// contract, anything else is the path of a copybook file.
+#[cfg(feature = "default")]
 pub struct FixedWidthFactory;
 
+#[cfg(feature = "default")]
 impl ContractFactory for FixedWidthFactory {
     fn technology(&self) -> &'static str {
-        "fixed-width"
+        declaration::NAME
     }
 
     fn settings(&self) -> &'static Settings {
-        SETTINGS
+        declaration::SETTINGS
     }
 
     fn load(&self, reference: &str) -> Result<Box<dyn Contract>, ContractError> {
@@ -206,18 +230,6 @@ impl ContractFactory for FixedWidthFactory {
         Ok(Box::new(FixedWidth::with_copybook(&text)?))
     }
 }
-
-/// What a Location gives this contract (ADR-0064, amendment 2026-09-26).
-const SETTINGS: &Settings = &Settings {
-    technology: env!("CARGO_PKG_NAME"),
-    settings: &[Setting {
-        name: "reference",
-        kind: Kind::Address,
-        presence: Presence::Optional,
-        meaning: "The path of the copybook records are held to; left out, any text holds.",
-        applies: Applies::Both,
-    }],
-};
 
 #[cfg(test)]
 mod tests {
@@ -324,6 +336,8 @@ mod tests {
 
     #[test]
     fn fixed_width_declares_its_settings_and_reads_through_them() {
+        use declaration::SETTINGS;
+        use xcore::settings::Applies;
         assert!(SETTINGS.problems().is_empty(), "{:?}", SETTINGS.problems());
         let given = |name: &str, value: &str| {
             (
